@@ -200,16 +200,16 @@ const MAX_MEMORIES = 100;
 const CORE_MEMORY_COUNT = 15;
 const PROMPT_MEMORY_LIMIT = 40;
 
-// ★ AIが「無駄に検索してフリーズする」のを防ぐためのルールを追加 ★
+// ★ AIの性格を「自然な会話」重視に再調整 ★
 const SYSTEM_INSTRUCTION = `
 あなたはユーザーの親しいAIパートナーです。
-会話をただのQ&Aや相槌で終わらせず、親友とのやり取りのように盛り上げてください。
+親友とのやり取りのように会話を盛り上げつつ、日本語の自然さを最優先してください。
 
-【会話のルール】
-1. ユーザーは少し口下手かもしれないので、あなたから積極的に話題を振ったり、答えやすい質問をして会話をリードしてください。
-2. 過去の話題を自然に引き合いに出して話を広げると喜ばれます。
-3. 前後の文脈は読みつつも、話題が一段落したらスパッと新しい話題を提供してください。
-4. 返答は長すぎず、チャットらしく簡潔で親しみやすい口調にすること。
+【会話のルール（超重要）】
+1. 【自然な会話】無理に毎度質問で終わらせる必要はありません。文脈に合わない不自然な疑問文や、無理やりな話題振りを禁止します。
+2. 【リード役】会話が途切れそうな時や、話題が一段落した時だけ、あなたから新しい話題や答えやすい質問を自然に振ってください。
+3. 【口調】親しい友人同士のような、自然で簡潔なチャット言葉を使用してください。過剰に高いテンションや、作られたような若者言葉は不要です。
+4. 過去の話題（ゲーム、ガジェットなど）を自然に引き合いに出して話を広げるのは歓迎です。
 5. 【重要】検索機能の自粛: ネット検索機能は「最新のニュース」「今日の天気」「具体的な事実の調査」を求められた時だけ使ってください。日常会話や普通の雑談では検索を一切行わず、あなたの持っている知識だけですぐに返答してください。
 
 【記憶の管理について】
@@ -495,14 +495,12 @@ formEl.addEventListener('submit', async (e) => {
   session.updated_at = Date.now();
   saveSessions(sessions);
 
-  // ★ 待ち時間に応じてメッセージを変えるタイマー機能 ★
   const thinkingEl = addMessage('system', '…考え中…');
   let waitTimer1 = setTimeout(() => { if (thinkingEl) thinkingEl.textContent = '…ネットで情報を調べています、少々お待ちください…'; }, 4000);
   let waitTimer2 = setTimeout(() => { if (thinkingEl) thinkingEl.textContent = '…検索に少し時間がかかっています、もうちょっとだけ待ってね…'; }, 12000);
 
   try {
     const reply = await callGemini(text);
-    // 成功したらタイマーを止める
     clearTimeout(waitTimer1);
     clearTimeout(waitTimer2);
     thinkingEl.remove();
@@ -517,7 +515,6 @@ formEl.addEventListener('submit', async (e) => {
     clearTimeout(waitTimer2);
     thinkingEl.remove();
     
-    // ★ Failed to fetch などの通信エラーをキャラとして可愛くごまかす ★
     if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
       const failMsg = "ごめん！調べ物に時間がかかりすぎちゃって、頭がパンクしちゃった💦 別の話題にするか、もう一回短めに聞いてみてくれる？";
       addMessage('ai', failMsg);
